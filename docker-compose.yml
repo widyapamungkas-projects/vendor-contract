@@ -1,0 +1,102 @@
+version: '3.8'
+
+# =============================================================
+# DOCKER COMPOSE - DEVELOPMENT
+# Jalankan dengan: docker-compose up -d
+# =============================================================
+
+services:
+
+  # -----------------------------------------------------------
+  # SERVICE 1: app
+  # Container PHP-FPM yang menjalankan Laravel
+  # -----------------------------------------------------------
+  app:
+    build:
+      context: ./docker/php        # Dockerfile ada di folder ini
+      dockerfile: Dockerfile
+    container_name: vendor_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      # Mount source code dari laptop ke container
+      # Setiap kamu simpan file di ./src, langsung terefleksi di container
+      - ./src:/var/www/html
+      # Mount storage terpisah agar tidak hilang saat container di-recreate
+      - app_storage:/var/www/html/storage
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+    networks:
+      - app-network
+    depends_on:
+      db:
+        condition: service_healthy  # Tunggu MySQL benar-benar siap
+
+  # -----------------------------------------------------------
+  # SERVICE 2: webserver
+  # Container Nginx sebagai web server
+  # -----------------------------------------------------------
+  webserver:
+    image: nginx:1.25-alpine        # Pakai Alpine = image lebih kecil
+    container_name: vendor_webserver
+    restart: unless-stopped
+    ports:
+      - "8080:80"                   # Dev: akses via localhost:8080
+    volumes:
+      # Config Nginx
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # Source code (Nginx perlu akses ke folder public/ untuk file statis)
+      - ./src:/var/www/html:ro      # ro = read-only, Nginx tidak perlu write
+    networks:
+      - app-network
+    depends_on:
+      - app
+
+  # -----------------------------------------------------------
+  # SERVICE 3: db
+  # Container MySQL sebagai database
+  # -----------------------------------------------------------
+  db:
+    image: mysql:8.0
+    container_name: vendor_db
+    restart: unless-stopped
+    ports:
+      - "3306:3306"                 # Dev only: expose ke laptop agar bisa pakai TablePlus/DBeaver
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-vendor_contract}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_USER: ${DB_USERNAME:-vendor_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-vendor_password}
+    volumes:
+      # Simpan data MySQL di volume agar tidak hilang saat container restart
+      - db_data:/var/lib/mysql
+      # Custom MySQL config
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    networks:
+      - app-network
+    healthcheck:
+      # Docker akan tunggu sampai MySQL benar-benar siap menerima koneksi
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+# =============================================================
+# VOLUMES
+# Data yang perlu persist (tetap ada) walau container di-restart
+# =============================================================
+volumes:
+  db_data:
+    driver: local
+  app_storage:
+    driver: local
+
+# =============================================================
+# NETWORKS
+# Jaringan private agar container bisa saling komunikasi
+# =============================================================
+networks:
+  app-network:
+    driver: bridge
