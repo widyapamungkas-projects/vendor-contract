@@ -27,7 +27,7 @@ class RestaurantContract extends Model {
 
     public static function generateCode(): string {
         $prefix = 'RC-' . now()->format('Ym');
-        $last = self::where('contract_code', 'like', $prefix . '-%')
+        $last = self::withTrashed()->where('contract_code', 'like', $prefix . '-%')
                     ->orderBy('contract_code', 'desc')->first();
         $number = $last ? (int) substr($last->contract_code, -4) + 1 : 1;
         return $prefix . '-' . str_pad($number, 4, '0', STR_PAD_LEFT);

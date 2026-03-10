@@ -36,6 +36,7 @@
                     <option value="activity">Activity Contracts</option>
                     <option value="entrance">Entrance Fee</option>
                     <option value="restaurant">Restaurant Contracts</option>
+                    <option value="guide">Guide Fee</option>
                 </select>
             </div>
 
@@ -75,6 +76,7 @@
                 'activity'   => ['Activity Contracts',    'fa-person-hiking','green'],
                 'entrance'   => ['Entrance Fee',          'fa-ticket',       'yellow'],
                 'restaurant' => ['Restaurant Contracts',  'fa-utensils',     'red'],
+                'guide'      => ['Guide Fee',              'fa-person-chalkboard', 'indigo'],
             ] as $module => [$label, $icon, $color])
             <a href="{{ route('imports.template', $module) }}"
                class="flex items-center justify-between px-4 py-3 border rounded hover:bg-gray-50 transition group">
@@ -145,6 +147,7 @@ const moduleInfo = {
     activity:   'Data activity lama akan dihapus. Kelompokkan per vendor_name dan activity_name.',
     entrance:   'Semua tiket entrance lama akan dihapus.',
     restaurant: 'Data restaurant lama akan dihapus. Kelompokkan per vendor_name untuk satu contract.',
+    guide:      'Semua data guide fee lama akan dihapus. Satu baris = satu tier rate.',
 };
 
 function updateInfo(module) {

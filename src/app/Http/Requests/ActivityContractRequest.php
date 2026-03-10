@@ -12,8 +12,10 @@ class ActivityContractRequest extends FormRequest
     {
         return [
             'contract.vendor_name'    => 'required|string|max:255',
-            'contract.vendor_city'    => 'required|string|max:255',
-            'contract.vendor_country' => 'required|string|max:255',
+            'contract.vendor_city'    => 'nullable|string|max:255',
+            'contract.vendor_country' => 'nullable|string|max:255',
+            'contract.destination'    => 'nullable|string|max:100',
+            'contract.area'           => 'nullable|string|max:100',
             'contract.pic_name'       => 'required|string|max:255',
             'contract.pic_phone'      => 'nullable|string|max:50',
             'contract.pic_email'      => 'nullable|email|max:255',

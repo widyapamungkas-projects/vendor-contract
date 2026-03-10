@@ -18,36 +18,11 @@
                    value="{{ old('contract.vendor_name', $contract->vendor_name ?? '') }}"
                    class="w-full border rounded px-3 py-2 text-sm @error('contract.vendor_name') border-red-500 @enderror">
         </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('contracts.hotel_city') }} *</label>
-            <input type="text" name="contract[vendor_city]"
-                   value="{{ old('contract.vendor_city', $contract->vendor_city ?? '') }}"
-                   class="w-full border rounded px-3 py-2 text-sm">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('contracts.hotel_country') }} *</label>
-            <input type="text" name="contract[vendor_country]"
-                   value="{{ old('contract.vendor_country', $contract->vendor_country ?? 'Indonesia') }}"
-                   class="w-full border rounded px-3 py-2 text-sm">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('contracts.pic_name') }} *</label>
-            <input type="text" name="contract[pic_name]"
-                   value="{{ old('contract.pic_name', $contract->pic_name ?? '') }}"
-                   class="w-full border rounded px-3 py-2 text-sm">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('contracts.pic_phone') }}</label>
-            <input type="text" name="contract[pic_phone]"
-                   value="{{ old('contract.pic_phone', $contract->pic_phone ?? '') }}"
-                   class="w-full border rounded px-3 py-2 text-sm">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('contracts.pic_email') }}</label>
-            <input type="email" name="contract[pic_email]"
-                   value="{{ old('contract.pic_email', $contract->pic_email ?? '') }}"
-                   class="w-full border rounded px-3 py-2 text-sm">
-        </div>
+
+
+
+
+
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('contracts.price_category') }} *</label>
             <select name="contract[price_category]" class="w-full border rounded px-3 py-2 text-sm">
@@ -260,12 +235,14 @@ function addVehicle() {
 }
 
 const routeIndexes = {};
-
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll(".vehicle-block").forEach(function(block, vi) {
+        routeIndexes[vi] = block.querySelectorAll(".route-row").length;
+    });
+});
 function addRoute(btn, vi) {
-    if (!routeIndexes[vi]) routeIndexes[vi] = {{ count($vehicles) > 0 ? 'Object.fromEntries(Array.from({length: ' . count($vehicles) . '}, (_, i) => [i, 1]))' : '{}' }};
-    if (!routeIndexes[vi]) routeIndexes[vi] = {};
-    if (!routeIndexes[vi][vi]) routeIndexes[vi][vi] = 0;
-    const ri = routeIndexes[vi][vi]++;
+    if (routeIndexes[vi] === undefined) routeIndexes[vi] = 0;
+    const ri = routeIndexes[vi]++;
     const container = btn.closest('.bg-white.rounded.border').querySelector('.routes-container');
     container.insertAdjacentHTML('beforeend', `
         <div class="route-row grid grid-cols-2 md:grid-cols-4 gap-2 items-end">

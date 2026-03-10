@@ -48,7 +48,7 @@ class TransportContract extends Model
     public static function generateCode(): string
     {
         $prefix = 'TC-' . now()->format('Ym');
-        $last   = self::where('contract_code', 'like', $prefix . '-%')
+        $last   = self::withTrashed()->where('contract_code', 'like', $prefix . '-%')
                       ->orderBy('contract_code', 'desc')
                       ->first();
         $number = $last ? (int) substr($last->contract_code, -4) + 1 : 1;

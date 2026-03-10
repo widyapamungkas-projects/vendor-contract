@@ -116,10 +116,3 @@
 @endforeach
 
 @endsection
-```
-
----
-
-Simpan semua file, buka browser:
-```
-http://100.72.79.110:8080/transport-contracts

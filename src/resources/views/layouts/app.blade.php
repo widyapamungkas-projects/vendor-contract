@@ -75,6 +75,11 @@
         <nav class="px-3 space-y-1">
             <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Contracts</p>
 
+            <a href="{{ route('dashboard') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('dashboard') ? 'bg-blue-700 text-white' : 'text-gray-600 hover:bg-gray-100' }}">
+                <i class="fa-solid fa-gauge-high w-5 text-center"></i>
+                <span>Dashboard</span>
+            </a>
             <a href="{{ route('hotel-contracts.index') }}"
                class="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium {{ request()->routeIs('hotel-contracts.*') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50' }}">
                 <i class="fa-solid fa-hotel w-4"></i> {{ __('contracts.title') }}
@@ -99,8 +104,19 @@
                class="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium {{ request()->routeIs('restaurant-contracts.*') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50' }}">
                 <i class="fa-solid fa-utensils w-4"></i> Restaurant
             </a>
+            <a href="{{ route('guide-languages.index') }}"
+               class="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium {{ request()->routeIs('guide-languages*') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50' }}">
+                <i class="fa-solid fa-person-chalkboard w-4"></i> Guide Fee
+            </a>
 
-            <div class="pt-3 mt-3 border-t space-y-1">
+            
+            <div class="pt-3 mt-3 border-t border-gray-200 space-y-1">
+                <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Costing</p>
+                <a href="{{ route('tour-packages.index') }}"
+                   class="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium {{ request()->routeIs('tour-packages.*') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50' }}">
+                    <i class="fa-solid fa-calculator w-4"></i> Tour Costing
+                </a>
+            </div><div class="pt-3 mt-3 border-t space-y-1">
                 <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Tools</p>
 
                 <a href="{{ route('imports.index') }}"

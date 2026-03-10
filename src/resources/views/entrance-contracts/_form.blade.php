@@ -18,7 +18,14 @@
             </select>
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Attraction Name *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+            <input type="text" name="destination"
+                   value="{{ old('destination', $ticket->destination ?? '') }}"
+                   placeholder="e.g. Bali, Lombok"
+                   class="w-full border rounded px-3 py-2 text-sm">
+        </div>
+        <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Attraction Name *</label>
             <input type="text" name="attraction_name"
                    value="{{ old('attraction_name', $ticket->attraction_name ?? '') }}"
                    placeholder="e.g. Tanah Lot Temple"

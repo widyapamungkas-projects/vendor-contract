@@ -14,6 +14,7 @@
 <form method="GET" class="bg-white rounded shadow p-4 mb-6 flex gap-3 flex-wrap">
     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search attraction..."
            class="border rounded px-3 py-2 text-sm flex-1 min-w-48">
+    <input type="text" name="destination" value="{{ request('destination') }}" placeholder="Destination..." onchange="this.form.submit()" onchange="this.form.submit()" class="border rounded px-3 py-2 text-sm w-40">
     <select name="attraction_type" class="border rounded px-3 py-2 text-sm" onchange="this.form.submit()">
         <option value="">All Type</option>
         @foreach(['temple'=>'Temple','museum'=>'Museum','theme_park'=>'Theme Park','natural_attraction'=>'Natural Attraction','cultural_show'=>'Cultural Show','zoo_safari'=>'Zoo/Safari','other'=>'Other'] as $val => $label)
@@ -23,14 +24,34 @@
     <button class="bg-gray-700 text-white px-4 py-2 rounded text-sm hover:bg-gray-800">
         <i class="fa-solid fa-search mr-1"></i>Search
     </button>
-    @if(request()->hasAny(['search','attraction_type']))
+    @if(request()->hasAny(['search','attraction_type','destination']))
         <a href="{{ route('entrance-contracts.index') }}" class="px-4 py-2 rounded text-sm border hover:bg-gray-50">
             <i class="fa-solid fa-xmark mr-1"></i>Reset
         </a>
     @endif
 </form>
 
-<div class="bg-white rounded shadow overflow-x-auto">
+
+@php
+    $allDestinations = \App\Models\EntranceTicket::whereNotNull("destination")
+        ->where("destination", "!=", "")
+        ->distinct()->orderBy("destination")->pluck("destination");
+@endphp
+@if($allDestinations->count())
+<div class="destination-navbar flex gap-2 flex-wrap mb-4" id="dest-navbar">
+    <button onclick="filterDestination('')"
+       class="px-3 py-1 rounded-full text-sm border dest-pill {{ !request('destination') ? 'bg-blue-700 text-white border-blue-700' : 'bg-white text-gray-600 hover:bg-gray-50' }}" data-dest="">
+        Semua
+    </button>
+    @foreach($allDestinations as $dest)
+    <button onclick="filterDestination('{{ $dest }}')"
+       class="px-3 py-1 rounded-full text-sm border dest-pill {{ request('destination') == $dest ? 'bg-blue-700 text-white border-blue-700' : 'bg-white text-gray-600 hover:bg-gray-50' }}" data-dest="{{ $dest }}">
+        {{ $dest }}
+    </button>
+    @endforeach
+</div>
+@endif
+<div id="table-wrapper" class="bg-white rounded shadow overflow-x-auto">
     <table class="w-full text-sm">
         <thead class="bg-gray-50 border-b">
             <tr>
@@ -96,4 +117,45 @@
         <div class="px-4 py-3 border-t">{{ $tickets->withQueryString()->links() }}</div>
     @endif
 </div>
+
+<script>
+function filterDestination(dest) {
+    document.querySelectorAll(".dest-pill").forEach(function(btn) {
+        if (btn.dataset.dest === dest) {
+            btn.classList.add("bg-blue-700", "text-white", "border-blue-700");
+            btn.classList.remove("bg-white", "text-gray-600", "hover:bg-gray-50");
+        } else {
+            btn.classList.remove("bg-blue-700", "text-white", "border-blue-700");
+            btn.classList.add("bg-white", "text-gray-600", "hover:bg-gray-50");
+        }
+    });
+
+    const url = new URL(window.location.href);
+    if (dest) {
+        url.searchParams.set("destination", dest);
+    } else {
+        url.searchParams.delete("destination");
+    }
+    url.searchParams.delete("page");
+    window.history.pushState({}, "", url.toString());
+
+    const wrapper = document.getElementById("table-wrapper");
+    wrapper.style.opacity = "0.5";
+
+    fetch(url.toString(), {
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+    })
+    .then(r => r.text())
+    .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        const newTable = doc.getElementById("table-wrapper");
+        if (newTable) {
+            wrapper.innerHTML = newTable.innerHTML;
+        }
+        wrapper.style.opacity = "1";
+    })
+    .catch(() => { wrapper.style.opacity = "1"; });
+}
+</script>
 @endsection

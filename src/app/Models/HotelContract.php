@@ -17,8 +17,8 @@ class HotelContract extends Model
     protected $fillable = [
         'contract_code',
         'hotel_name',
-        'hotel_address',
-        'hotel_city',
+        
+        
         'hotel_country', 'destination', 'area',
         'pic_name',
         'pic_phone',

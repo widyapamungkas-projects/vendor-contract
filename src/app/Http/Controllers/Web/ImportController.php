@@ -7,17 +7,22 @@ use App\Imports\TransportContractImport;
 use App\Imports\ActivityContractImport;
 use App\Imports\EntranceTicketImport;
 use App\Imports\RestaurantContractImport;
+use App\Imports\GuideImport;
 use App\Exports\HotelTemplateExport;
 use App\Exports\TransportTemplateExport;
 use App\Exports\ActivityTemplateExport;
 use App\Exports\EntranceTemplateExport;
 use App\Exports\RestaurantTemplateExport;
+use App\Exports\GuideTemplateExport;
 use App\Models\ImportLog;
 use App\Models\EntranceTicket;
 use App\Models\HotelContract;
 use App\Models\TransportContract;
 use App\Models\ActivityContract;
 use App\Models\RestaurantContract;
+use App\Models\GuideLanguage;
+use App\Models\GuideService;
+use App\Models\GuideServiceTier;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -35,6 +40,7 @@ class ImportController extends Controller {
             'activity'   => [new ActivityTemplateExport,    'template_activity_contracts.xlsx'],
             'entrance'   => [new EntranceTemplateExport,    'template_entrance_fee.xlsx'],
             'restaurant' => [new RestaurantTemplateExport,  'template_restaurant_contracts.xlsx'],
+            'guide'      => [new GuideTemplateExport,       'template_guide_fee.xlsx'],
         ];
 
         if (!isset($exports[$module])) abort(404);
@@ -44,7 +50,7 @@ class ImportController extends Controller {
 
     public function upload(Request $request) {
         $request->validate([
-            'module' => 'required|in:hotel,transport,activity,entrance,restaurant',
+            'module' => 'required|in:hotel,transport,activity,entrance,restaurant,guide',
             'file'   => 'required|file|mimes:xlsx,xls,csv|max:5120',
         ]);
 
@@ -58,6 +64,7 @@ class ImportController extends Controller {
             'activity'   => ActivityContract::query()->delete(),
             'entrance'   => EntranceTicket::query()->delete(),
             'restaurant' => RestaurantContract::query()->delete(),
+            'guide'      => (function() { GuideServiceTier::query()->delete(); GuideService::query()->delete(); GuideLanguage::query()->delete(); })()
         };
 
         // Run import
@@ -67,6 +74,7 @@ class ImportController extends Controller {
             'activity'   => new ActivityContractImport,
             'entrance'   => new EntranceTicketImport,
             'restaurant' => new RestaurantContractImport,
+            'guide'      => new GuideImport,
         };
 
         try {

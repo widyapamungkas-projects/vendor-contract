@@ -16,7 +16,9 @@ class HotelContractService
             $query->where(function ($q) use ($filters) {
                 $q->where('hotel_name', 'like', '%' . $filters['search'] . '%')
                   ->orWhere('contract_code', 'like', '%' . $filters['search'] . '%')
-                  ->orWhere('hotel_city', 'like', '%' . $filters['search'] . '%');
+                  ->orWhere('hotel_city', 'like', '%' . $filters['search'] . '%')
+                  ->orWhere('destination', 'like', '%' . $filters['search'] . '%')
+                  ->orWhere('area', 'like', '%' . $filters['search'] . '%');
             });
         }
 
@@ -26,6 +28,14 @@ class HotelContractService
 
         if (!empty($filters['contract_type'])) {
             $query->where('contract_type', $filters['contract_type']);
+        }
+
+        if (!empty($filters['destination'])) {
+            $query->where('destination', 'like', '%' . $filters['destination'] . '%');
+        }
+
+        if (!empty($filters['area'])) {
+            $query->where('area', 'like', '%' . $filters['area'] . '%');
         }
 
         return $query->latest()->paginate(10);

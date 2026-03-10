@@ -22,6 +22,8 @@ class ActivityContractImport implements ToCollection, WithHeadingRow {
                     'vendor_name'    => $vendorName,
                     'vendor_city'    => $first['vendor_city'] ?? '',
                     'vendor_country' => $first['vendor_country'] ?? 'Indonesia',
+                    'destination'    => $first['destination'] ?? null,
+                    'area'           => $first['area'] ?? null,
                     'pic_name'       => $first['pic_name'] ?? '',
                     'pic_phone'      => $first['pic_phone'] ?? null,
                     'price_category' => $first['price_category'] ?? 'FIT',

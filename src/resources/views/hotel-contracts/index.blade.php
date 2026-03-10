@@ -48,7 +48,10 @@
 {{-- TABLE --}}
 <div class="bg-white rounded shadow overflow-x-auto">
     <table class="w-full text-sm">
-        <th class="px-4 py-3 text-left font-semibold text-gray-600">Destination</th>
+        <thead class="bg-gray-50 border-b">
+            <tr>
+                <th class="px-4 py-3 text-left font-semibold text-gray-600">{{ __('contracts.hotel_name') }}</th>
+                <th class="px-4 py-3 text-left font-semibold text-gray-600">Destination</th>
                 <th class="px-4 py-3 text-left font-semibold text-gray-600">Area</th>
                 <th class="px-4 py-3 text-left font-semibold text-gray-600">{{ __('contracts.contract_type') }}</th>
                 <th class="px-4 py-3 text-left font-semibold text-gray-600">{{ __('contracts.valid_until') }}</th>
@@ -59,6 +62,7 @@
         <tbody class="divide-y">
             @forelse($contracts as $contract)
             <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 font-medium text-gray-800">{{ $contract->hotel_name }}</td>
                 <td class="px-4 py-3 text-gray-600">{{ $contract->destination ?? '-' }}</td>
                 <td class="px-4 py-3 text-gray-600">{{ $contract->area ?? '-' }}</td>
                 <td class="px-4 py-3">
@@ -94,7 +98,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="8" class="px-4 py-8 text-center text-gray-400">
+                <td colspan="7" class="px-4 py-8 text-center text-gray-400">
                     <i class="fa-solid fa-inbox text-3xl mb-2 block"></i>
                     {{ __('contracts.no_data') }}
                 </td>

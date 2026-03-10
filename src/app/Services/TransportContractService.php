@@ -46,6 +46,7 @@ class TransportContractService
                     $vehicle = $contract->vehicles()->create($vehicleData);
 
                     foreach ($rates as $rate) {
+                        if (empty($rate['route_name']) || $rate['price'] === null || $rate['price'] === '') $rate['price'] = 0;
                         if (empty($rate['route_name'])) continue;
                         $vehicle->rates()->create($rate);
                     }
@@ -80,6 +81,7 @@ class TransportContractService
                     $vehicle = $contract->vehicles()->create($vehicleData);
 
                     foreach ($rates as $rate) {
+                        if (empty($rate['route_name']) || $rate['price'] === null || $rate['price'] === '') $rate['price'] = 0;
                         if (empty($rate['route_name'])) continue;
                         $vehicle->rates()->create($rate);
                     }

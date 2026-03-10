@@ -15,11 +15,6 @@ class TransportContractRequest extends FormRequest
     {
         return [
             'contract.vendor_name'      => 'required|string|max:255',
-            'contract.vendor_city'      => 'required|string|max:255',
-            'contract.vendor_country'   => 'required|string|max:255',
-            'contract.pic_name'         => 'required|string|max:255',
-            'contract.pic_phone'        => 'nullable|string|max:50',
-            'contract.pic_email'        => 'nullable|email|max:255',
             'contract.price_category'   => 'required|in:FIT,GIT',
             'contract.currency'         => 'required|string|max:10',
             'contract.valid_from'       => 'required|date',

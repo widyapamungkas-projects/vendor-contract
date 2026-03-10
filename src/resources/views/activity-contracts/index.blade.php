@@ -17,6 +17,7 @@
     <input type="text" name="search" value="{{ request('search') }}"
            placeholder="{{ __('contracts.search') }}..."
            class="border rounded px-3 py-2 text-sm flex-1 min-w-48">
+    <input type="text" name="destination" value="{{ request('destination') }}" placeholder="Destination..." onchange="this.form.submit()" onchange="this.form.submit()" class="border rounded px-3 py-2 text-sm w-40">
     <select name="status" class="border rounded px-3 py-2 text-sm" onchange="this.form.submit()">
         <option value="">{{ __('contracts.all_status') }}</option>
         <option value="active"        {{ request('status') == 'active'        ? 'selected' : '' }}>{{ __('contracts.active') }}</option>
@@ -26,14 +27,34 @@
     <button class="bg-gray-700 text-white px-4 py-2 rounded text-sm hover:bg-gray-800">
         <i class="fa-solid fa-search mr-1"></i>{{ __('contracts.search') }}
     </button>
-    @if(request()->hasAny(['search','status']))
+    @if(request()->hasAny(['search','status','destination']))
         <a href="{{ route('activity-contracts.index') }}" class="px-4 py-2 rounded text-sm border hover:bg-gray-50">
             <i class="fa-solid fa-xmark mr-1"></i>Reset
         </a>
     @endif
 </form>
 
-<div class="bg-white rounded shadow overflow-x-auto">
+
+@php
+    $allDestinations = \App\Models\ActivityContract::whereNotNull("destination")
+        ->where("destination", "!=", "")
+        ->distinct()->orderBy("destination")->pluck("destination");
+@endphp
+@if($allDestinations->count())
+<div class="destination-navbar flex gap-2 flex-wrap mb-4" id="dest-navbar">
+    <button onclick="filterDestination('')"
+       class="px-3 py-1 rounded-full text-sm border dest-pill {{ !request('destination') ? 'bg-blue-700 text-white border-blue-700' : 'bg-white text-gray-600 hover:bg-gray-50' }}" data-dest="">
+        Semua
+    </button>
+    @foreach($allDestinations as $dest)
+    <button onclick="filterDestination('{{ $dest }}')"
+       class="px-3 py-1 rounded-full text-sm border dest-pill {{ request('destination') == $dest ? 'bg-blue-700 text-white border-blue-700' : 'bg-white text-gray-600 hover:bg-gray-50' }}" data-dest="{{ $dest }}">
+        {{ $dest }}
+    </button>
+    @endforeach
+</div>
+@endif
+<div id="table-wrapper" class="bg-white rounded shadow overflow-x-auto">
     <table class="w-full text-sm">
         <thead class="bg-gray-50 border-b">
             <tr>
@@ -95,4 +116,50 @@
         <div class="px-4 py-3 border-t">{{ $contracts->withQueryString()->links() }}</div>
     @endif
 </div>
+
+<script>
+function filterDestination(dest) {
+    // Update pill aktif
+    document.querySelectorAll(".dest-pill").forEach(function(btn) {
+        if (btn.dataset.dest === dest) {
+            btn.classList.add("bg-blue-700", "text-white", "border-blue-700");
+            btn.classList.remove("bg-white", "text-gray-600", "hover:bg-gray-50");
+        } else {
+            btn.classList.remove("bg-blue-700", "text-white", "border-blue-700");
+            btn.classList.add("bg-white", "text-gray-600", "hover:bg-gray-50");
+        }
+    });
+
+    // Build URL dengan query params yang ada
+    const url = new URL(window.location.href);
+    if (dest) {
+        url.searchParams.set("destination", dest);
+    } else {
+        url.searchParams.delete("destination");
+    }
+    url.searchParams.delete("page");
+
+    // Update browser URL tanpa reload
+    window.history.pushState({}, "", url.toString());
+
+    // Fetch tabel baru
+    const wrapper = document.getElementById("table-wrapper");
+    wrapper.style.opacity = "0.5";
+
+    fetch(url.toString(), {
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+    })
+    .then(r => r.text())
+    .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        const newTable = doc.getElementById("table-wrapper");
+        if (newTable) {
+            wrapper.innerHTML = newTable.innerHTML;
+        }
+        wrapper.style.opacity = "1";
+    })
+    .catch(() => { wrapper.style.opacity = "1"; });
+}
+</script>
 @endsection

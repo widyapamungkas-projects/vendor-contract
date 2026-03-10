@@ -11,25 +11,21 @@
     <h2 class="font-semibold text-gray-700 mb-4 border-b pb-2">
         <i class="fa-solid fa-circle-info mr-2 text-blue-600"></i>Basic Information
     </h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('contracts.vendor_name') }} *</label>
-            <input type="text" name="contract[vendor_name]"
-                   value="{{ old('contract.vendor_name', $contract->vendor_name ?? '') }}"
-                   class="w-full border rounded px-3 py-2 text-sm @error('contract.vendor_name') border-red-500 @enderror">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Vendor Name *</label>
+            <input type="text" name="contract[vendor_name]" value="{{ old('contract.vendor_name', $contract->vendor_name ?? '') }}" class="w-full border rounded px-3 py-2 text-sm">
         </div>
+        
+        
+        
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('contracts.hotel_city') }} *</label>
-            <input type="text" name="contract[vendor_city]"
-                   value="{{ old('contract.vendor_city', $contract->vendor_city ?? '') }}"
+            <label class="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+            <input type="text" name="contract[destination]"
+                   value="{{ old('contract.destination', $contract->destination ?? '') }}"
+                   placeholder="e.g. Bali, Lombok, Malang"
                    class="w-full border rounded px-3 py-2 text-sm">
         </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('contracts.hotel_country') }}</label>
-            <input type="text" name="contract[vendor_country]"
-                   value="{{ old('contract.vendor_country', $contract->vendor_country ?? 'Indonesia') }}"
-                   class="w-full border rounded px-3 py-2 text-sm">
-        </div>
+        
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('contracts.pic_name') }} *</label>
             <input type="text" name="contract[pic_name]"

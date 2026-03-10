@@ -17,6 +17,7 @@ class EntranceTicketImport implements ToCollection, WithHeadingRow {
                 EntranceTicket::create([
                     'attraction_type' => $row['attraction_type'] ?? 'other',
                     'attraction_name' => $row['attraction_name'],
+                    'destination'     => $row['destination'] ?? null,
                     'currency'        => $row['currency'] ?? 'IDR',
                     'adult_price'     => $row['adult_price'] ?? 0,
                     'child_price'     => $row['child_price'] ?? 0,

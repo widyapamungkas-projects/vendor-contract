@@ -16,7 +16,7 @@ class HotelContractController extends Controller
 
     public function index(Request $request)
     {
-        $contracts = $this->service->getAll($request->only(['search', 'status', 'contract_type']));
+        $contracts = $this->service->getAll($request->only(['search', 'status', 'contract_type', 'destination', 'area']));
         return view('hotel-contracts.index', compact('contracts'));
     }
 
