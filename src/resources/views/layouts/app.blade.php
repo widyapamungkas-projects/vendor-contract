@@ -43,7 +43,8 @@
                     <div class="px-4 py-3 text-xs text-gray-400 text-center">Loading...</div>
                 </div>
                 <div class="px-4 py-2 border-t text-center">
-                    <a href="{{ route('payment-slips.index') }}" class="text-xs text-blue-600 hover:text-blue-800">
+                    <a href="{{ route('settings.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('settings.*') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}"><i class="fa-solid fa-gear w-4 text-center"></i> Settings</a>
+            <a href="{{ route('payment-slips.index') }}" class="text-xs text-blue-600 hover:text-blue-800">
                         View all payment slips →
                     </a>
                 </div>
@@ -124,7 +125,8 @@
                     <i class="fa-solid fa-file-excel w-4"></i> Batch Import
                 </a>
 
-                <a href="{{ route('payment-slips.index') }}"
+                <a href="{{ route('settings.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('settings.*') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}"><i class="fa-solid fa-gear w-4 text-center"></i> Settings</a>
+            <a href="{{ route('payment-slips.index') }}"
                    class="flex items-center gap-2 px-3 py-2 rounded text-sm font-medium {{ request()->routeIs('payment-slips.*') ? 'bg-green-50 text-green-700' : 'text-gray-600 hover:bg-gray-50' }}">
                     <i class="fa-solid fa-file-invoice-dollar w-4"></i>
                     <span>Payment Slips</span>

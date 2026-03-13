@@ -26,7 +26,7 @@
 
         {{-- Tabs --}}
         <div class="flex gap-1 mb-0 bg-gray-800 rounded-t-lg px-3 pt-3">
-            @foreach(['info'=>'① Package Info','la'=>'② LA Cost','hotel'=>'③ Hotel','calc'=>'④ Proposal'] as $t => $label)
+            @foreach(['info'=>'① Package Info','la'=>'② LA Cost','hotel'=>'③ Hotel','calc'=>'④ Proposal','pnl'=>'⑤ P&L Estimation'] as $t => $label)
             <button type="button" onclick="setTab('{{ $t }}')" id="tab-btn-{{ $t }}"
                 class="tab-btn px-4 py-2 text-xs font-bold rounded-t transition-all">
                 {{ $label }}
@@ -321,6 +321,53 @@
         </div>
 
         {{-- VARIABLE COST + ITINERARY (below fixed cost grid, full width) --}}
+
+        {{-- TAB 5: P&L Estimation --}}
+        <div id="tab-pnl" class="tab-pane hidden bg-white rounded-b-lg rounded-tr-lg border border-gray-200 p-6">
+            <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-emerald-500"></i> P&L Estimation
+            </h2>
+
+            {{-- Client Details --}}
+            <div class="grid grid-cols-4 gap-3 mb-5 p-4 bg-gray-50 rounded-lg border border-gray-200 text-sm">
+                <div><span class="block text-xs text-gray-400 uppercase font-semibold mb-1">Client / Agent</span><span class="font-bold text-gray-800" id="pnl-agent">—</span></div>
+                <div><span class="block text-xs text-gray-400 uppercase font-semibold mb-1">Destination</span><span class="font-bold text-gray-800" id="pnl-destination">—</span></div>
+                <div><span class="block text-xs text-gray-400 uppercase font-semibold mb-1">Period</span><span class="font-bold text-gray-800" id="pnl-period">—</span></div>
+                <div><span class="block text-xs text-gray-400 uppercase font-semibold mb-1">Actual Pax</span><span class="font-bold text-gray-800" id="pnl-pax">—</span></div>
+            </div>
+
+            {{-- Exchange Rate + Config --}}
+            <div class="grid grid-cols-5 gap-3 mb-5">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Exchange Rate Manual</label>
+                    <input type="number" id="pnl-fx-rate" placeholder="e.g. 16500" step="0.01"
+                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm" oninput="recalcPNL()">
+                    <span class="text-xs text-gray-400 mt-1 block" id="pnl-fx-label">IDR per 1 unit currency terpilih</span>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Kamar TL</label>
+                    <input type="number" id="pnl-tl-rooms" value="0" min="0"
+                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm" oninput="recalcPNL()">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Jumlah Kamar (auto)</label>
+                    <div class="border border-gray-200 rounded px-3 py-2 text-sm bg-gray-50 font-bold text-indigo-700" id="pnl-total-rooms">—</div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Kamar TL (auto)</label>
+                    <div class="border border-gray-200 rounded px-3 py-2 text-sm bg-gray-50 font-bold text-amber-600" id="pnl-tl-auto">—</div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Total Kamar</label>
+                    <div class="border border-gray-200 rounded px-3 py-2 text-sm bg-indigo-50 font-bold text-indigo-800 text-lg" id="pnl-grand-rooms">—</div>
+                </div>
+            </div>
+
+            {{-- PNL Table --}}
+            <div class="overflow-x-auto">
+                <div id="pnl-table"></div>
+            </div>
+        </div>
         <div id="tab-la-bottom" class="bg-white border-x border-b border-gray-200 rounded-b-lg" style="display:none">
             <div class="px-5 pt-0 pb-4">
                 <div class="border-t-2 border-dashed border-gray-200 pt-4">
@@ -668,7 +715,7 @@
                         </div>
                     </div>
                     {{-- Extra costs per hotel option --}}
-                    <div class="px-4 pb-4 pt-0 grid grid-cols-4 gap-3 bg-gray-50 border-t border-gray-100">
+                    <div class="px-4 pb-4 pt-0 grid grid-cols-5 gap-3 bg-gray-50 border-t border-gray-100">
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Extra Bed (IDR/malam)</label>
                             <input type="number" name="hotel_extra_bed[]" value="{{ $hMeta['extra_bed'] ?? 0 }}"
@@ -685,9 +732,14 @@
                                 class="w-full border border-gray-200 rounded px-2 py-1.5 text-sm hotel-fd-meeting" oninput="recalcHotel()">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Dinner (IDR/pax)</label>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Dinner (IDR)</label>
                             <input type="number" name="hotel_dinner[]" value="{{ $hMeta['dinner'] ?? 0 }}"
                                 class="w-full border border-gray-200 rounded px-2 py-1.5 text-sm hotel-dinner" oninput="recalcHotel()">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-indigo-500 uppercase mb-1">Pembagi <span class="text-gray-400 normal-case font-normal">(HD/FD/Dinner)</span></label>
+                            <input type="number" name="hotel_pembagi[]" value="{{ $hMeta['pembagi'] ?? 1 }}" min="1"
+                                class="w-full border border-indigo-300 rounded px-2 py-1.5 text-sm hotel-pembagi bg-indigo-50" oninput="recalcHotel()">
                         </div>
                     </div>
                     <input type="hidden" name="hotel_nights[]" value="{{ $h->nights }}">
@@ -727,7 +779,15 @@
 {{-- TAB 4: Proposal --}}
         <div id="tab-calc" class="tab-pane hidden bg-white rounded-b-lg rounded-tr-lg border border-gray-200 p-6">
 
-            {{-- Client Details --}}
+            {{-- Preview button --}}
+            @if($package)
+            <div class="flex justify-end mb-4">
+                <a href="{{ route('tour-packages.preview', $package) }}" target="_blank"
+                   class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition">
+                    <i class="fa-solid fa-eye"></i> Preview &amp; Print Proposal
+                </a>
+            </div>
+            @endif
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-5 mb-5">
                 <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">
                     <i class="fa-solid fa-user mr-1 text-indigo-400"></i> Client Details
@@ -782,6 +842,7 @@
                             <i class="fa-solid fa-plus mr-1"></i> Add Price Table
                         </button>
                         <input type="hidden" name="prop_custom_tables" id="prop-custom-tables-hidden">
+                        <input type="hidden" name="prop_hotel_table" id="prop-hotel-table-hidden" value="{{ $package?->prop_hotel_table }}">
 
                         {{-- Divider --}}
                         <hr class="my-4 border-gray-200">
@@ -1036,6 +1097,7 @@ function calcCurrency() { /* kept for compatibility */ }
 
 function setTab(t) {
     window._activeTab = t;
+    if (t === 'pnl') recalcPNL();
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
     document.querySelectorAll('.tab-btn').forEach(b => {
         b.classList.remove('bg-white','text-gray-800');
@@ -1119,18 +1181,18 @@ function recalcProposal() {
 
         // Price formatter: currency left, number right, fixed width using spans
         function fpCell(roomUSD, tlUSD) {
-            var total = Math.round((roomUSD + laUSD + tlUSD) * fxRate);
+            var total = Math.ceil((roomUSD + laUSD + tlUSD) * fxRate);
             var sym = currency === 'IDR' ? 'IDR' : curSym;
             return '<span style="display:inline-flex;width:100%;justify-content:space-between;gap:8px">'
                  + '<span style="color:#9ca3af;font-weight:500">' + sym + '</span>'
                  + '<span>' + fmt(total) + '</span></span>';
         }
-        function helperCell(usd) {
-            var total = Math.round(usd * fxRate);
+        function helperCell(val) {
             var sym = currency === 'IDR' ? 'IDR' : curSym;
+            var disp = fmt(Math.ceil(val));
             return '<span style="display:inline-flex;width:100%;justify-content:space-between;gap:8px">'
                  + '<span style="color:#9ca3af;font-weight:500">' + sym + '</span>'
-                 + '<span>' + fmt(total) + '</span></span>';
+                 + '<span>' + disp + '</span></span>';
         }
 
         var thS  = 'padding:10px 16px;font-weight:700;font-size:11px;white-space:nowrap;letter-spacing:.05em;text-transform:uppercase;';
@@ -1173,9 +1235,10 @@ function recalcProposal() {
             var trpUSD = trpIDR / rateUSD;
             var tlUSD  = withTL ? (sglUSD / paxN) : 0;
 
-            var hdUSD     = hdMeeting / paxN / rateUSD;
-            var fdUSD     = fdMeeting / paxN / rateUSD;
-            var dinnerUSD = dinner / rateUSD;
+            var pembagi   = Math.max(1, parseFloat(row.querySelector('.hotel-pembagi')?.value) || 1);
+            var hdFinal     = hdMeeting / pembagi;
+            var fdFinal     = fdMeeting / pembagi;
+            var dinnerFinal = dinner    / pembagi;
 
             var bg   = ri % 2 === 0 ? '#f9fafb' : '#ffffff';
             var tdName = 'padding:12px 16px;font-weight:700;color:#1f2937;border-bottom:1px solid #e5e7eb;';
@@ -1187,13 +1250,18 @@ function recalcProposal() {
                 + '<td style="' + tdP + 'color:#1d4ed8">' + fpCell(sglUSD, tlUSD) + '</td>'
                 + '<td style="' + tdP + 'color:#065f46">' + fpCell(twnUSD, tlUSD) + '</td>'
                 + '<td style="' + tdP + 'color:#1e40af">' + fpCell(trpUSD, tlUSD) + '</td>';
-            if (hasHD)     html += '<td style="' + tdP + 'color:#7c3aed">' + (hdMeeting > 0 ? helperCell(hdUSD)     : '<span style="color:#d1d5db">—</span>') + '</td>';
-            if (hasFD)     html += '<td style="' + tdP + 'color:#7c3aed">' + (fdMeeting > 0 ? helperCell(fdUSD)     : '<span style="color:#d1d5db">—</span>') + '</td>';
-            if (hasDinner) html += '<td style="' + tdP + 'color:#7c3aed">' + (dinner    > 0 ? helperCell(dinnerUSD) : '<span style="color:#d1d5db">—</span>') + '</td>';
+            if (hasHD)     html += '<td style="' + tdP + 'color:#7c3aed">' + (hdMeeting > 0 ? helperCell(hdFinal)     : '<span style="color:#d1d5db">—</span>') + '</td>';
+            if (hasFD)     html += '<td style="' + tdP + 'color:#7c3aed">' + (fdMeeting > 0 ? helperCell(fdFinal)     : '<span style="color:#d1d5db">—</span>') + '</td>';
+            if (hasDinner) html += '<td style="' + tdP + 'color:#7c3aed">' + (dinner    > 0 ? helperCell(dinnerFinal) : '<span style="color:#d1d5db">—</span>') + '</td>';
             html += '</tr>';
         });
         html += '</tbody></table>';
         tbl.innerHTML = html;
+
+        // Sync to hidden input for DB save
+        var hotelTableHidden = document.getElementById('prop-hotel-table-hidden');
+        if (hotelTableHidden) hotelTableHidden.value = html;
+        if (typeof recalcPNL === 'function') recalcPNL();
 
         // Note below table
         var noteEl = document.getElementById('prop-rate-note');
@@ -2000,6 +2068,7 @@ function recalcVariable() {
 
     // Store for live recalc
     window._totalIDR = totalIDR;
+    if (window._activeTab === 'pnl') recalcPNL();
 
     // Sync live input fields from master inputs (only if not already focused)
     const rateInput   = gS('sum-rate-input');
@@ -2081,6 +2150,20 @@ function addFromSearchIdx(i) {
 
 // ── Restaurant Menu Picker (saat add restaurant di itin) ──────
 var _restPickerCtx = {};
+var _restMealType = 'lunch';
+
+function setMealType(type) {
+    _restMealType = type;
+    var lunchBtn  = document.getElementById('meal-type-lunch');
+    var dinnerBtn = document.getElementById('meal-type-dinner');
+    if (type === 'lunch') {
+        lunchBtn.style.background  = '#fef3c7'; lunchBtn.style.borderColor  = '#f59e0b'; lunchBtn.style.color  = '#b45309';
+        dinnerBtn.style.background = 'white';   dinnerBtn.style.borderColor = '#d1d5db'; dinnerBtn.style.color = '#6b7280';
+    } else {
+        dinnerBtn.style.background = '#ede9fe'; dinnerBtn.style.borderColor = '#7c3aed'; dinnerBtn.style.color = '#5b21b6';
+        lunchBtn.style.background  = 'white';   lunchBtn.style.borderColor  = '#d1d5db'; lunchBtn.style.color  = '#6b7280';
+    }
+}
 
 function openRestaurantMenuPicker(contractId, restaurantName, day) {
     _restPickerCtx = {contractId, restaurantName, day};
@@ -2092,6 +2175,8 @@ function openRestaurantMenuPicker(contractId, restaurantName, day) {
     document.getElementById('rest-picker-menu-select').innerHTML = '<option value="">Loading...</option>';
     document.getElementById('rest-picker-info').innerHTML = '';
     document.getElementById('rest-picker-price').value = 0;
+    _restMealType = 'lunch';
+    setMealType('lunch');
 
     fetch('/tour-packages-api/restaurant-menus?contract_id=' + contractId)
         .then(function(r){ return r.json(); })
@@ -2138,22 +2223,27 @@ function confirmRestMenuPicker() {
 
     var day       = ctx.day;
     var type      = 'restaurant';
-    var name      = ctx.restaurantName;
+    var mealLabel = _restMealType === 'dinner' ? 'Dinner' : 'Lunch';
+    var name      = mealLabel + ' at ' + ctx.restaurantName;
     var id        = ctx.contractId;
+    var menuKey   = day + ':' + id;
     var container = document.getElementById('day-' + day + '-items');
     var empty     = container?.querySelector('div[style*="text-align:center"]');
     if (empty) empty.remove();
-    container?.insertAdjacentHTML('beforeend', renderItinRow(day, {name, type, price, ref: id}));
+    container?.insertAdjacentHTML('beforeend', renderItinRow(day, {name, type, price, ref: menuKey}));
 
-    // Pre-save menu selection to _menuData
+    // Pre-save menu selection to _menuData keyed by day:contractId
     if (opt && opt.value) {
         var servingMap = {set_menu:'Set Menu Per Person', family_set:'Family Sharing', buffet:'Buffet'};
-        if (!_menuData[id]) _menuData[id] = {};
-        _menuData[id].menu_id       = opt.value;
-        _menuData[id].menu_name     = opt.textContent;
-        _menuData[id].serving_style = servingMap[opt.dataset.serving] || opt.dataset.serving || '';
-        _menuData[id].adult_price   = opt.dataset.price || 0;
-        _menuData[id].menu_details  = opt.dataset.details || '';
+        _menuData[menuKey] = {
+            menu_id:       opt.value,
+            menu_name:     opt.textContent,
+            serving_style: servingMap[opt.dataset.serving] || opt.dataset.serving || '',
+            adult_price:   opt.dataset.price || 0,
+            menu_details:  opt.dataset.details || '',
+            meal_type:     _restMealType,
+            contract_id:   id
+        };
         syncMenuData();
     }
 
@@ -2206,15 +2296,17 @@ function addHotelRow() {
         + '<div><label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Harga/Malam (IDR)</label>'
         + '<input type="number" name="hotel_room_rates[]" value="0" class="w-full border border-gray-300 rounded px-2 py-2 text-sm hotel-rate-input" oninput="recalcHotel()"></div>'
         + '</div>'
-        + '<div class="px-4 pb-4 pt-0 grid grid-cols-4 gap-3 bg-gray-50 border-t border-gray-100">'
+        + '<div class="px-4 pb-4 pt-0 grid grid-cols-5 gap-3 bg-gray-50 border-t border-gray-100">'
         + '<div><label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Extra Bed (IDR/malam)</label>'
         + '<input type="number" name="hotel_extra_bed[]" value="0" class="w-full border border-gray-200 rounded px-2 py-1.5 text-sm hotel-extra-bed" oninput="recalcHotel()"></div>'
         + '<div><label class="block text-xs font-semibold text-gray-500 uppercase mb-1">HD. Meeting (IDR)</label>'
         + '<input type="number" name="hotel_hd_meeting[]" value="0" class="w-full border border-gray-200 rounded px-2 py-1.5 text-sm hotel-hd-meeting" oninput="recalcHotel()"></div>'
         + '<div><label class="block text-xs font-semibold text-gray-500 uppercase mb-1">FD. Meeting (IDR)</label>'
         + '<input type="number" name="hotel_fd_meeting[]" value="0" class="w-full border border-gray-200 rounded px-2 py-1.5 text-sm hotel-fd-meeting" oninput="recalcHotel()"></div>'
-        + '<div><label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Dinner (IDR/pax)</label>'
+        + '<div><label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Dinner (IDR)</label>'
         + '<input type="number" name="hotel_dinner[]" value="0" class="w-full border border-gray-200 rounded px-2 py-1.5 text-sm hotel-dinner" oninput="recalcHotel()"></div>'
+        + '<div><label class="block text-xs font-semibold text-indigo-500 uppercase mb-1">Pembagi (HD/FD/Dinner)</label>'
+        + '<input type="number" name="hotel_pembagi[]" value="1" min="1" class="w-full border border-indigo-300 rounded px-2 py-1.5 text-sm hotel-pembagi bg-indigo-50" oninput="recalcHotel()"></div>'
         + '</div>'
         + '<input type="hidden" name="hotel_nights[]" value="0">'
         + '<input type="hidden" name="hotel_surcharge_nights[]" value="0">'
@@ -2445,21 +2537,21 @@ function recalcHotel() {
         // STEP 4 — TL cost: SGL_USD / pax
         var tlUSD = withTL ? (sglUSD / pax) : 0;
 
-        // STEP 5 — Meeting & Dinner helpers (per pax)
-        var hdUSD     = hdMeeting / pax / rateUSD;
-        var fdUSD     = fdMeeting / pax / rateUSD;
-        var dinnerUSD = dinner / rateUSD;
+        // STEP 5 — Meeting & Dinner: harga / pembagi = nilai final dalam currency terpilih
+        var pembagi     = Math.max(1, parseFloat(row.querySelector('.hotel-pembagi')?.value) || 1);
+        var hdFinal     = hdMeeting / pembagi;
+        var fdFinal     = fdMeeting / pembagi;
+        var dinnerFinal = dinner    / pembagi;
 
         // STEP 6 — Final = (roomUSD + laUSD + tlUSD) × fxRate
         function finalPrice(roomUSD) {
             var total = (roomUSD + laUSD + tlUSD) * fxRate;
             if (currency === 'IDR') return 'IDR ' + fmt(Math.round(total));
-            return curSym + ' ' + total.toFixed(2);
+            return curSym + ' ' + fmt(Math.ceil(total));
         }
-        function helperPrice(usd) {
-            var val = usd * fxRate;
+        function helperPrice(val) {
             if (currency === 'IDR') return 'IDR ' + fmt(Math.round(val));
-            return curSym + ' ' + val.toFixed(2);
+            return curSym + ' ' + fmt(Math.ceil(val));
         }
 
         var bg = ri % 2 === 0 ? '#1f2937' : '#111827';
@@ -2473,9 +2565,9 @@ function recalcHotel() {
             + '<td style="padding:8px 10px;color:#fde68a;font-weight:700">' + finalPrice(sglUSD) + '</td>'
             + '<td style="padding:8px 10px;color:#86efac;font-weight:700">' + finalPrice(twnUSD) + '</td>'
             + '<td style="padding:8px 10px;color:#93c5fd;font-weight:700">' + finalPrice(trpUSD) + '</td>';
-        if (hasHD)     tableHtml += '<td style="padding:8px 10px;color:#c4b5fd">' + (hdMeeting > 0 ? helperPrice(hdUSD) : '—') + '</td>';
-        if (hasFD)     tableHtml += '<td style="padding:8px 10px;color:#c4b5fd">' + (fdMeeting > 0 ? helperPrice(fdUSD) : '—') + '</td>';
-        if (hasDinner) tableHtml += '<td style="padding:8px 10px;color:#c4b5fd">' + (dinner > 0    ? helperPrice(dinnerUSD) : '—') + '</td>';
+        if (hasHD)     tableHtml += '<td style="padding:8px 10px;color:#c4b5fd">' + (hdMeeting > 0 ? helperPrice(hdFinal)     : '—') + '</td>';
+        if (hasFD)     tableHtml += '<td style="padding:8px 10px;color:#c4b5fd">' + (fdMeeting > 0 ? helperPrice(fdFinal)     : '—') + '</td>';
+        if (hasDinner) tableHtml += '<td style="padding:8px 10px;color:#c4b5fd">' + (dinner > 0    ? helperPrice(dinnerFinal) : '—') + '</td>';
         tableHtml += '</tr>';
     });
 
@@ -2484,6 +2576,122 @@ function recalcHotel() {
 }
 
 
+
+// ── P&L Estimation ────────────────────────────────────────────────────────
+function recalcPNL() {
+    var actualPax = parseInt(document.getElementById('f-actual-pax')?.value) || 0;
+    var minPax    = parseInt(document.getElementById('f-pax')?.value) || 1;
+    var currency  = document.getElementById('f-currency')?.value || 'IDR';
+    var nights    = parseInt(document.getElementById('h-nights')?.value) || 0;
+    var withTL    = parseInt(document.getElementById('h-with-tl')?.value) === 1;
+    var fxManual  = parseFloat(document.getElementById('pnl-fx-rate')?.value) || 0;
+    var tlRoomsIn = parseInt(document.getElementById('pnl-tl-rooms')?.value) || 0;
+    var totalIDR  = window._totalIDR || 0;
+
+    var curSym = currency === 'MYR' ? 'MYR' : currency === 'SGD' ? 'SGD' : currency === 'USD' ? 'USD' : 'IDR';
+
+    // Client details
+    var setTxt = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val || '—'; };
+    setTxt('pnl-agent',       document.getElementById('f-agent')?.value);
+    setTxt('pnl-destination', document.getElementById('f-destination')?.value);
+    var pFrom = document.getElementById('f-period-from')?.value;
+    var pTo   = document.getElementById('f-period-to')?.value;
+    setTxt('pnl-period', (pFrom && pTo) ? pFrom + ' – ' + pTo : (pFrom || '—'));
+    setTxt('pnl-pax', actualPax + ' pax');
+    var lbl = document.getElementById('pnl-fx-label');
+    if (lbl) lbl.textContent = 'IDR per 1 ' + (currency === 'IDR' ? 'USD (manual)' : currency);
+
+    // Room calculation
+    var guestRooms = Math.ceil(actualPax / 2);
+    var tlAuto = 0;
+    if (withTL && minPax > 0 && actualPax > 0) {
+        tlAuto = Math.min(3, Math.floor(actualPax / minPax));
+    }
+    var grandRooms = guestRooms + tlAuto + tlRoomsIn;
+    setTxt('pnl-total-rooms', guestRooms + ' kamar tamu');
+    setTxt('pnl-tl-auto',    tlAuto + ' kamar (auto)');
+    setTxt('pnl-grand-rooms', grandRooms + ' kamar');
+
+    var hotelRows  = document.querySelectorAll('.hotel-row');
+    // Read twin prices from prop-hotel-table (same table shown in Proposal tab)
+    var propTblRows = document.querySelectorAll('#prop-hotel-table tbody tr');
+
+    if (!hotelRows.length || !fxManual) {
+        document.getElementById('pnl-table').innerHTML =
+            '<p style="color:#9ca3af;font-size:13px;padding:16px 0">Isi exchange rate manual dan pastikan data hotel & LA sudah terisi.</p>';
+        return;
+    }
+
+    var laCost = Math.ceil(totalIDR * actualPax);
+
+    var thS = 'padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:#1f2937;color:#f3f4f6;border-right:1px solid #374151;white-space:nowrap;';
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:13px">'
+        + '<thead><tr>'
+        + '<th style="' + thS + 'text-align:left">Nama Hotel</th>'
+        + '<th style="' + thS + 'text-align:right">Twin Rate (' + curSym + ')</th>'
+        + '<th style="' + thS + 'text-align:right">Total Revenue (IDR)</th>'
+        + '<th style="' + thS + 'text-align:right">Hotel Cost (IDR)</th>'
+        + '<th style="' + thS + 'text-align:right">Total LA Cost (IDR)</th>'
+        + '<th style="' + thS + 'text-align:right;background:#065f46">P/L Estimation</th>'
+        + '</tr></thead><tbody>';
+
+    hotelRows.forEach(function(row, ri) {
+        var hotelName = row.querySelector('.hotel-name-input')?.value || ('Option ' + (ri+1));
+        var roomRate  = parseFloat(row.querySelector('.hotel-rate-input')?.value) || 0;
+        var sNights   = parseInt(row.dataset.surchargeNights) || 0;
+        var sRate     = parseFloat(row.dataset.surchargeRate) || 0;
+        var roomType  = row.querySelector('.hotel-type-select')?.value || '';
+
+        // Read twin price directly from prop-hotel-table col index 3 (TWN/DBL)
+        var twnFinal = 0;
+        var propRow  = propTblRows[ri];
+        if (propRow) {
+            var twnCell = propRow.querySelectorAll('td')[3]; // col 3 = TWN/DBL
+            if (twnCell) {
+                // Cell contains spans: "MYR | 781" — extract the number
+                var cellText = twnCell.textContent.replace(/[^\d]/g, '');
+                twnFinal = parseFloat(cellText) || 0;
+            }
+        }
+
+        // Revenue = twin price × fxManual × actualPax
+        var revenue   = Math.ceil(twnFinal * fxManual * actualPax);
+
+        // Hotel Cost = (roomRate × nights + surcharge) × grandRooms
+        var roomTotal = roomRate * nights + sRate * sNights;
+        var hotelCost = Math.ceil(roomTotal * grandRooms);
+
+        // P/L
+        var pl    = revenue - hotelCost - laCost;
+        var plPct = revenue > 0 ? (pl / revenue * 100) : 0;
+        var plPax = actualPax > 0 ? Math.ceil(pl / actualPax) : 0;
+
+        var bg      = ri % 2 === 0 ? '#f9fafb' : '#ffffff';
+        var tdS     = 'padding:10px 14px;border-bottom:1px solid #e5e7eb;border-right:1px solid #f3f4f6;';
+        var tdR     = tdS + 'text-align:right;font-weight:700;';
+        var plColor = pl >= 0 ? '#065f46' : '#991b1b';
+        var plBg    = pl >= 0 ? '#f0fdf4' : '#fef2f2';
+
+        html += '<tr style="background:' + bg + '">'
+            + '<td style="' + tdS + 'font-weight:700;color:#1f2937">' + hotelName
+                + (roomType ? '<br><span style="font-size:10px;color:#9ca3af;font-weight:400">' + roomType + '</span>' : '') + '</td>'
+            + '<td style="' + tdR + 'color:#374151">' + curSym + ' ' + fmt(twnFinal) + '</td>'
+            + '<td style="' + tdR + 'color:#1d4ed8">IDR ' + fmt(revenue) + '</td>'
+            + '<td style="' + tdR + 'color:#92400e">IDR ' + fmt(hotelCost) + '</td>'
+            + '<td style="' + tdR + 'color:#7c3aed">IDR ' + fmt(laCost) + '</td>'
+            + '<td style="' + tdS + 'background:' + plBg + ';text-align:right">'
+                + '<div style="color:' + plColor + ';font-weight:900;font-size:14px">IDR ' + fmt(pl) + '</div>'
+                + '<div style="color:' + plColor + ';font-size:11px;margin-top:4px">'
+                    + (pl >= 0 ? '▲' : '▼') + ' ' + Math.abs(plPct).toFixed(1) + '%'
+                    + ' &nbsp;|&nbsp; IDR ' + fmt(plPax) + ' / pax'
+                + '</div>'
+            + '</td>'
+            + '</tr>';
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('pnl-table').innerHTML = html;
+}
 // Close hotel picker on backdrop click
 document.addEventListener('click', function(e) {
     var m = document.getElementById('modal-hotel-picker');
@@ -2812,17 +3020,26 @@ function renderMenuTable() {
         html += '<div class="grid border border-gray-200 rounded-b-lg overflow-hidden" style="grid-template-columns:repeat(' + cols + ',1fr)">';
 
         items.forEach(function(item, idx) {
-            var saved   = _menuData[item.ref_id] || {};
-            var serving = saved.serving_style || '';
-            var price   = saved.adult_price   || item.price || 0;
-            var details = saved.menu_details  || '';
-            var menuName = saved.menu_name    || '';
-            var borderL = idx > 0 ? 'border-left:1px solid #e5e7eb;' : '';
+            var menuKey = day + ':' + item.ref_id;
+            var saved   = _menuData[menuKey] || _menuData[item.ref_id] || {};
+            var serving  = saved.serving_style || '';
+            var price    = saved.adult_price   || item.price || 0;
+            var details  = saved.menu_details  || '';
+            var menuName = saved.menu_name     || '';
+            var mealType = saved.meal_type     || '';
+            var borderL  = idx > 0 ? 'border-left:1px solid #e5e7eb;' : '';
 
             html += '<div style="padding:16px;background:white;' + borderL + '">';
 
-            // Header: restaurant name + menu name
-            html += '<div class="font-black text-gray-800 text-sm mb-1">' + item.name + '</div>';
+            // Header: meal type tag + restaurant name
+            html += '<div class="flex items-center gap-2 mb-1">';
+            if (mealType === 'lunch') {
+                html += '<span style="font-size:10px;font-weight:800;background:#fef3c7;color:#b45309;border:1px solid #f59e0b;border-radius:4px;padding:1px 7px"><i class="fa-solid fa-sun" style="margin-right:3px"></i>LUNCH</span>';
+            } else if (mealType === 'dinner') {
+                html += '<span style="font-size:10px;font-weight:800;background:#ede9fe;color:#5b21b6;border:1px solid #7c3aed;border-radius:4px;padding:1px 7px"><i class="fa-solid fa-moon" style="margin-right:3px"></i>DINNER</span>';
+            }
+            html += '<div class="font-black text-gray-800 text-sm">' + item.name + '</div>';
+            html += '</div>';
             if (menuName) html += '<div class="text-xs text-indigo-600 font-semibold mb-2">' + menuName + '</div>';
 
             // Info row: serving style + price
@@ -2984,6 +3201,19 @@ function syncCustomTables() {
             <button onclick="closeRestMenuPicker()" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:22px;cursor:pointer">×</button>
         </div>
         <div style="padding:16px 20px;overflow:auto;flex:1">
+            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Meal Type</label>
+            <div class="flex gap-2 mb-3">
+                <button type="button" id="meal-type-lunch" onclick="setMealType('lunch')"
+                    class="flex-1 py-2 rounded border text-xs font-bold transition"
+                    style="background:#fef3c7;border-color:#f59e0b;color:#b45309">
+                    <i class="fa-solid fa-sun mr-1"></i> Lunch
+                </button>
+                <button type="button" id="meal-type-dinner" onclick="setMealType('dinner')"
+                    class="flex-1 py-2 rounded border text-xs font-bold transition"
+                    style="background:white;border-color:#d1d5db;color:#6b7280">
+                    <i class="fa-solid fa-moon mr-1"></i> Dinner
+                </button>
+            </div>
             <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Menu</label>
             <select id="rest-picker-menu-select" class="w-full border border-gray-300 rounded px-3 py-2 text-sm mb-2" onchange="onRestPickerMenuChange()"></select>
             <div id="rest-picker-info"></div>

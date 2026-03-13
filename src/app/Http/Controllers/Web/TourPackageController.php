@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\TourPackage;
+use App\Models\Setting;
 use App\Models\TourPackageLaCost;
 use App\Models\TourPackageFixedCost;
 use App\Models\TourPackageItinerary;
@@ -72,10 +73,11 @@ class TourPackageController extends Controller
             'fg_flower_girl_price'=> $request->fg_flower_girl_price ?? 150000,
             'notes'              => $request->notes,
             'prop_inclusion'     => $request->prop_inclusion,
+            'prop_hotel_table'   => $request->prop_hotel_table,
             'prop_exclusion'     => $request->prop_exclusion,
             'prop_tnc'           => $request->prop_tnc,
             'prop_itinerary'     => $request->prop_itinerary,
-            'prop_menu'          => $request->prop_menu,
+            'prop_menu'          => $request->filled('prop_menu') ? $request->prop_menu : null,
             'prop_custom_tables' => $request->prop_custom_tables,
             'prop_itin_briefs'   => $request->prop_itin_briefs,
             'created_by'         => auth()->user()->name ?? 'system',
@@ -143,12 +145,13 @@ class TourPackageController extends Controller
             'fg_flower_girl_price'=> $request->fg_flower_girl_price ?? 150000,
             'notes'               => $request->notes,
             'prop_inclusion'      => $request->prop_inclusion,
+            'prop_hotel_table'    => $request->filled('prop_hotel_table') ? $request->prop_hotel_table : $tourPackage->prop_hotel_table,
             'prop_exclusion'      => $request->prop_exclusion,
             'prop_tnc'            => $request->prop_tnc,
             'prop_itinerary'      => $request->prop_itinerary,
-            'prop_menu'           => $request->prop_menu,
+            'prop_menu'           => $request->filled('prop_menu') ? $request->prop_menu : $tourPackage->prop_menu,
             'prop_custom_tables'  => $request->prop_custom_tables,
-            'prop_itin_briefs'    => $request->prop_itin_briefs,
+            'prop_itin_briefs'    => $request->filled('prop_itin_briefs') ? $request->prop_itin_briefs : $tourPackage->prop_itin_briefs,
         ]);
 
         $this->saveFixedCosts($tourPackage, $request);
@@ -305,6 +308,7 @@ class TourPackageController extends Controller
                         'hd_meeting' => (float)($request->hotel_hd_meeting[$i] ?? 0),
                         'fd_meeting' => (float)($request->hotel_fd_meeting[$i] ?? 0),
                         'dinner'     => (float)($request->hotel_dinner[$i]     ?? 0),
+                        'pembagi'    => max(1, (float)($request->hotel_pembagi[$i] ?? 1)),
                     ]),
                 ]);
             }
@@ -525,4 +529,126 @@ class TourPackageController extends Controller
     }
 
 
+
+    public function preview(TourPackage $tourPackage)
+    {
+        $package = $tourPackage->load(['hotels.hotelContract', 'itinerary']);
+        return view('tour-packages.preview', compact('package'));
+    }
+
+
+    public function exportWord(TourPackage $tourPackage)
+    {
+        $package = $tourPackage;
+        $package->load(['hotels.hotelContract', 'itinerary']);
+
+        // ── Load data ─────────────────────────────────────────────────────
+        $itinBriefs = is_array($package->prop_itin_briefs)
+            ? $package->prop_itin_briefs
+            : json_decode($package->prop_itin_briefs ?? '{}', true);
+        $itinBriefs = (is_array($itinBriefs) && !array_is_list($itinBriefs)) ? $itinBriefs : [];
+
+        $menuData = is_array($package->prop_menu)
+            ? $package->prop_menu
+            : json_decode($package->prop_menu ?? '{}', true);
+        $menuData = $menuData ?: [];
+
+        $itineraryItems = $package->itinerary()->orderBy('day')->orderBy('sort_order')->get();
+        $settings       = \App\Models\Setting::allKeyed();
+
+        // ── Parse rate table ──────────────────────────────────────────────
+        $rateHeaders = [];
+        $rateRows    = [];
+        if ($package->prop_hotel_table) {
+            $dom = new \DOMDocument();
+            @$dom->loadHTML('<meta charset="utf-8">' . $package->prop_hotel_table);
+            foreach ($dom->getElementsByTagName('th') as $th) {
+                $rateHeaders[] = trim($th->textContent);
+            }
+            foreach ($dom->getElementsByTagName('tr') as $i => $tr) {
+                if ($i === 0) continue;
+                $cells = [];
+                foreach ($tr->getElementsByTagName('td') as $td) {
+                    $cells[] = trim(preg_replace('/\s+/', ' ', $td->textContent));
+                }
+                if ($cells) $rateRows[] = $cells;
+            }
+        }
+
+        // ── Parse HTML fields to plain lines ─────────────────────────────
+        $htmlLines = function($html) {
+            if (!$html) return [];
+            $html = preg_replace('/<\/p>\s*<p[^>]*>/i', "\n", $html);
+            $html = preg_replace('/<br\s*\/?>/i', "\n", $html);
+            $html = preg_replace('/<\/li>/i', "\n", $html);
+            $html = preg_replace('/<li[^>]*>/i', '', $html);
+            $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            return array_values(array_filter(array_map('trim', explode("\n", $text))));
+        };
+
+        // ── Period string ─────────────────────────────────────────────────
+        $from = $package->period_from ? \Carbon\Carbon::parse($package->period_from)->format('d M Y') : '—';
+        $to   = $package->period_to   ? \Carbon\Carbon::parse($package->period_to)->format('d M Y')   : '—';
+
+        // ── Build JSON payload ────────────────────────────────────────────
+        $payload = [
+            'package' => [
+                'package_code' => $package->package_code,
+                'agent'        => $package->agent,
+                'destination'  => $package->destination,
+                'duration'     => $package->duration,
+                'period_str'   => $from . ' – ' . $to,
+                'pax'          => $package->pax,
+                'currency'     => $package->currency,
+            ],
+            'settings' => [
+                'company_name'         => $settings['company_name']    ?? 'Diorama Destination',
+                'company_tagline'      => $settings['company_tagline'] ?? 'Tour & Travel Specialist',
+                'proposal_footer_text' => $settings['proposal_footer_text'] ?? 'Confidential',
+                'brand_logo_path'      => !empty($settings['brand_logo'])
+                    ? storage_path('app/public/' . $settings['brand_logo']) : null,
+                'company_logo_path'    => !empty($settings['company_logo'])
+                    ? storage_path('app/public/' . $settings['company_logo']) : null,
+            ],
+            'itin_briefs'     => $itinBriefs,
+            'menu'            => $menuData,
+            'itinerary'       => $itineraryItems->map(fn($it) => [
+                'day'       => $it->day,
+                'item_name' => $it->item_name,
+                'item_type' => $it->item_type,
+                'ref_id'    => $it->ref_id,
+                'sort_order'=> $it->sort_order,
+            ])->toArray(),
+            'rate_headers'    => $rateHeaders,
+            'rate_rows'       => $rateRows,
+            'inclusion_lines' => $htmlLines($package->prop_inclusion),
+            'exclusion_lines' => $htmlLines($package->prop_exclusion),
+            'tnc_lines'       => $htmlLines($package->prop_tnc),
+        ];
+
+        // ── Write JSON to temp file ───────────────────────────────────────
+        $jsonFile  = tempnam(sys_get_temp_dir(), 'proposal_') . '.json';
+        $docxFile  = tempnam(sys_get_temp_dir(), 'proposal_') . '.docx';
+        $scriptPath = storage_path('app/generate_proposal.py');
+        file_put_contents($jsonFile, json_encode($payload, JSON_UNESCAPED_UNICODE));
+
+        // ── Call Python ───────────────────────────────────────────────────
+        $cmd    = escapeshellcmd("python3 {$scriptPath} {$jsonFile} {$docxFile}") . ' 2>&1';
+        $output = shell_exec($cmd);
+
+        @unlink($jsonFile);
+
+        if (!file_exists($docxFile) || filesize($docxFile) < 1000) {
+            \Log::error('exportWord python failed: ' . $output);
+            return response()->json(['error' => 'Failed to generate document', 'detail' => $output], 500);
+        }
+
+        $filename = $package->package_code . '_Proposal.docx';
+        while (ob_get_level()) ob_end_clean();
+
+        return response()->download($docxFile, $filename, [
+            'Content-Type'  => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+        ])->deleteFileAfterSend(true);
+    }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Web\EntranceContractController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\HotelContractController;
 use App\Http\Controllers\Web\RestaurantContractController;
+use App\Http\Controllers\Web\TourPackageController;
 use App\Http\Controllers\Web\ImportController;
 use App\Http\Controllers\Web\PaymentSlipController;
 use App\Http\Controllers\Web\TransportContractController;
@@ -75,3 +76,11 @@ Route::get('tour-packages-api/guide-rate', [App\Http\Controllers\Web\TourPackage
 Route::get('tour-packages-api/restaurant-menus', [App\Http\Controllers\Web\TourPackageController::class, 'apiRestaurantMenus']);
 Route::get('tour-packages-api/restaurant-menu-detail', [App\Http\Controllers\Web\TourPackageController::class, 'apiRestaurantMenuDetail']);
 Route::post('tour-packages-api/generate-brief', [App\Http\Controllers\Web\TourPackageController::class, 'apiGenerateBrief'])->name('tour-packages.api.generate-brief');
+Route::get('/tour-packages/{tourPackage}/export-word', [TourPackageController::class, 'exportWord'])->name('tour-packages.export-word');
+Route::get('/tour-packages/{tourPackage}/preview', [App\Http\Controllers\Web\TourPackageController::class, 'preview'])->name('tour-packages.preview')->middleware(['auth']);
+
+// Settings
+use App\Http\Controllers\Web\SettingController;
+Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+Route::get('/settings/delete-logo/{type}', [SettingController::class, 'deleteLogo'])->name('settings.delete-logo');

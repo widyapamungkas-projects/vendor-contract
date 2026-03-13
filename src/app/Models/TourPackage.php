@@ -14,7 +14,7 @@ class TourPackage extends Model
         'period_from','period_to','pax','actual_pax','margin','currency','mw_bottles_per_day','mw_price_per_dus','fg_garland_price','fg_flower_girl_price','mw_bottles_per_day','mw_price_per_dus','fg_garland_price','fg_flower_girl_price',
         'rate_usd','rate_myr','rate_sgd','rate_eur',
         'notes',
-        'prop_inclusion','prop_exclusion','prop_tnc','prop_itinerary','prop_menu',
+        'prop_hotel_table', 'prop_inclusion','prop_exclusion','prop_tnc','prop_itinerary','prop_menu',
         'prop_custom_tables','prop_itin_briefs','created_by',
     ];
 
